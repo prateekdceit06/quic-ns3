@@ -19,15 +19,14 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
-#include "ns3/test.h"
-#include "ns3/packet.h"
 #include "ns3/log.h"
-
+#include "ns3/packet.h"
 #include "ns3/quic-socket-rx-buffer.h"
 #include "ns3/quic-stream-rx-buffer.h"
+#include "ns3/test.h"
 
 using namespace ns3;
 
@@ -41,328 +40,295 @@ NS_LOG_COMPONENT_DEFINE("QuicRxBufferTestSuite");
  */
 class QuicRxBufferTestCase : public TestCase
 {
-public:
-  QuicRxBufferTestCase ();
+  public:
+    QuicRxBufferTestCase();
 
-private:
-  virtual void
-  DoRun (void);
-  virtual void
-  DoTeardown (void);
+  private:
+    virtual void DoRun(void);
+    virtual void DoTeardown(void);
 
-  /*
-   * \brief Test the insertion of packets in the Socket RX buffer
-   */
-  void
-  TestSocketAdd ();
-  /*
-   * \brief Test the extraction of packets from the Socket RX buffer
-   */
-  void
-  TestSocketExtract ();
-  /**
-   * \brief Test the insertion of packets in the Stream RX buffer
-   */
-  void
-  TestStreamAdd ();
-  /**
-   * \brief Test the extraction of packets from the Stream RX buffer
-   */
-  void
-  TestStreamExtract ();
+    /*
+     * \brief Test the insertion of packets in the Socket RX buffer
+     */
+    void TestSocketAdd();
+    /*
+     * \brief Test the extraction of packets from the Socket RX buffer
+     */
+    void TestSocketExtract();
+    /**
+     * \brief Test the insertion of packets in the Stream RX buffer
+     */
+    void TestStreamAdd();
+    /**
+     * \brief Test the extraction of packets from the Stream RX buffer
+     */
+    void TestStreamExtract();
 };
 
-QuicRxBufferTestCase::QuicRxBufferTestCase () :
-    TestCase ("QuicRxBuffer Test")
+QuicRxBufferTestCase::QuicRxBufferTestCase()
+    : TestCase("QuicRxBuffer Test")
 {
 }
 
 void
-QuicRxBufferTestCase::DoRun ()
+QuicRxBufferTestCase::DoRun()
 {
-  /*
-   * Test the insertion of packets in the Socket RX buffer:
-   * -> add packets till socket tx buffer overflow
-   * -> check correctness of buffer application size and available size
-   * -> checking availability count
-   */
-  TestSocketAdd ();
+    /*
+     * Test the insertion of packets in the Socket RX buffer:
+     * -> add packets till socket tx buffer overflow
+     * -> check correctness of buffer application size and available size
+     * -> checking availability count
+     */
+    TestSocketAdd();
 
-  /*
-   * Test the extraction of packets from the Socket RX buffer
-   * -> add 3 packets 
-   * -> extract all packets and test that the buffer is empty
-   * -> check correctness of buffer application size and available size
-   * -> checking availability count
-   */
-  TestSocketExtract ();
+    /*
+     * Test the extraction of packets from the Socket RX buffer
+     * -> add 3 packets
+     * -> extract all packets and test that the buffer is empty
+     * -> check correctness of buffer application size and available size
+     * -> checking availability count
+     */
+    TestSocketExtract();
 
-  /*
-   * Test the insertion of packets in the Stream RX buffer:
-   * -> add packets till stream tx buffer overflow
-   * -> check correctness of buffer application size and available size
-   * -> checking availability count
-   * -> check in-order buffer insertion and duplicate packets
-   * -> check FIN functionality
-   */
-  TestStreamAdd ();
+    /*
+     * Test the insertion of packets in the Stream RX buffer:
+     * -> add packets till stream tx buffer overflow
+     * -> check correctness of buffer application size and available size
+     * -> checking availability count
+     * -> check in-order buffer insertion and duplicate packets
+     * -> check FIN functionality
+     */
+    TestStreamAdd();
 
-  /*
-   * Test the extraction of packets from the Stream RX buffer:
-   * -> add 3 packets 
-   * -> extract first 2 packets and readd them again
-   * -> extract all packets and test that the buffer is empty
-   * -> check correctness of buffer application size and available size
-   */
-  TestStreamExtract ();
+    /*
+     * Test the extraction of packets from the Stream RX buffer:
+     * -> add 3 packets
+     * -> extract first 2 packets and readd them again
+     * -> extract all packets and test that the buffer is empty
+     * -> check correctness of buffer application size and available size
+     */
+    TestStreamExtract();
 }
 
 void
-QuicRxBufferTestCase::TestSocketAdd ()
+QuicRxBufferTestCase::TestSocketAdd()
 {
-  // create the buffer
-  QuicSocketRxBuffer rxBuf;
-  rxBuf.SetMaxBufferSize (3000);
+    // create the buffer
+    QuicSocketRxBuffer rxBuf;
+    rxBuf.SetMaxBufferSize(3000);
 
-  // add 1 packet to the socket rx buffer
-  Ptr<Packet> p = Create<Packet> (1200);
-  bool pos = rxBuf.Add (p);
+    // add 1 packet to the socket rx buffer
+    Ptr<Packet> p = Create<Packet>(1200);
+    bool pos = rxBuf.Add(p);
 
-  NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 1800,
-                        "Availability differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 1200,
-                        "Buffer size differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 1800, "Availability differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 1200, "Buffer size differs from expected");
 
-  // test full buffer
-  Ptr<Packet> p1 = Copy (p);
-  Ptr<Packet> p2 = Copy (p);
+    // test full buffer
+    Ptr<Packet> p1 = Copy(p);
+    Ptr<Packet> p2 = Copy(p);
 
-  pos = rxBuf.Add (p1);
-  bool neg = rxBuf.Add (p2);
+    pos = rxBuf.Add(p1);
+    bool neg = rxBuf.Add(p2);
 
-  NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
-  NS_TEST_ASSERT_MSG_EQ(neg, false, "Added wrong packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 600,
-                        "Availability differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 2400,
-                        "Buffer size differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
+    NS_TEST_ASSERT_MSG_EQ(neg, false, "Added wrong packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 600, "Availability differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 2400, "Buffer size differs from expected");
 }
 
 void
-QuicRxBufferTestCase::TestSocketExtract ()
+QuicRxBufferTestCase::TestSocketExtract()
 {
-  // create the buffer
-  QuicSocketRxBuffer rxBuf;
-  rxBuf.SetMaxBufferSize (3600);
+    // create the buffer
+    QuicSocketRxBuffer rxBuf;
+    rxBuf.SetMaxBufferSize(3600);
 
-  // add 3 packets to the socket rx buffer
-  Ptr<Packet> p = Create<Packet> (1200);
-  Ptr<Packet> p1 = Copy (p);
-  Ptr<Packet> p2 = Copy (p);
+    // add 3 packets to the socket rx buffer
+    Ptr<Packet> p = Create<Packet>(1200);
+    Ptr<Packet> p1 = Copy(p);
+    Ptr<Packet> p2 = Copy(p);
 
-  rxBuf.Add (p);
-  rxBuf.Add (p1);
-  rxBuf.Add (p2);
+    rxBuf.Add(p);
+    rxBuf.Add(p1);
+    rxBuf.Add(p2);
 
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 0,
-                        "Availability differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 3600,
-                        "Buffer size differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 0, "Availability differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 3600, "Buffer size differs from expected");
 
-  // extract first packet
-  Ptr<Packet> out = rxBuf.Extract (1200);
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 1200,
-                        "Availability differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 2400,
-                        "Buffer size differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(out->GetSize (), 1200,
-                        "Packet size differs from expected");
+    // extract first packet
+    Ptr<Packet> out = rxBuf.Extract(1200);
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 1200, "Availability differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 2400, "Buffer size differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(out->GetSize(), 1200, "Packet size differs from expected");
 
-  // extract another packet
-  out = rxBuf.Extract (1800);
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 2400,
-                        "Availability differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 1200,
-                        "Buffer size differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(out->GetSize (), 1200,
-                        "Packet size differs from expected");
+    // extract another packet
+    out = rxBuf.Extract(1800);
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 2400, "Availability differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 1200, "Buffer size differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(out->GetSize(), 1200, "Packet size differs from expected");
 
-  // extract another packet
-  out = rxBuf.Extract (2400);
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 3600,
-                        "Availability differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 0, "Buffer size differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(out->GetSize (), 1200,
-                        "Packet size differs from expected");
+    // extract another packet
+    out = rxBuf.Extract(2400);
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 3600, "Availability differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 0, "Buffer size differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(out->GetSize(), 1200, "Packet size differs from expected");
 
-  // test empty buffer
-  out = rxBuf.Extract (3600);
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 3600,
-                        "Availability differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 0, "Buffer size differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(out, 0, "Packet size differs from expected");
+    // test empty buffer
+    out = rxBuf.Extract(3600);
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 3600, "Availability differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 0, "Buffer size differs from expected");
+    NS_TEST_ASSERT_MSG_EQ(out, nullptr, "Packet size differs from expected");
 }
 
 void
-QuicRxBufferTestCase::TestStreamAdd ()
+QuicRxBufferTestCase::TestStreamAdd()
 {
-  // create the buffer
-  QuicStreamRxBuffer rxBuf;
-  rxBuf.SetMaxBufferSize (18000);
+    // create the buffer
+    QuicStreamRxBuffer rxBuf;
+    rxBuf.SetMaxBufferSize(18000);
 
-  // create packet
-  Ptr<Packet> p = Create<Packet> (1200);
-  QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (1, 0, p->GetSize (), false,
-                                                            true, false);
-  sub.SetOffset(0);
+    // create packet
+    Ptr<Packet> p = Create<Packet>(1200);
+    QuicSubheader sub =
+        QuicSubheader::CreateStreamSubHeader(1, 0, p->GetSize(), false, true, false);
+    sub.SetOffset(0);
 
-  // add a packet
-  bool pos = rxBuf.Add (p, sub);
-  std::pair<uint64_t, uint64_t> deliverable = rxBuf.GetDeliverable (0);
+    // add a packet
+    bool pos = rxBuf.Add(p, sub);
+    std::pair<uint64_t, uint64_t> deliverable = rxBuf.GetDeliverable(0);
 
-  NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 16800, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 1200, "Wrong buffer size");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.first, 0, "Wrong deliverable offset value");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.second, 1200,
-                        "Wrong deliverable packet size");
+    NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 16800, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 1200, "Wrong buffer size");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.first, 0, "Wrong deliverable offset value");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.second, 1200, "Wrong deliverable packet size");
 
-  // duplicate packet
-  bool neg = rxBuf.Add (p, sub);
-  deliverable = rxBuf.GetDeliverable (0);
+    // duplicate packet
+    bool neg = rxBuf.Add(p, sub);
+    deliverable = rxBuf.GetDeliverable(0);
 
-  NS_TEST_ASSERT_MSG_EQ(neg, false, "Added duplicate packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 16800, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 1200, "Wrong buffer size");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.first, 0, "Wrong deliverable offset value");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.second, 1200,
-                        "Wrong deliverable packet size");
+    NS_TEST_ASSERT_MSG_EQ(neg, false, "Added duplicate packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 16800, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 1200, "Wrong buffer size");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.first, 0, "Wrong deliverable offset value");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.second, 1200, "Wrong deliverable packet size");
 
-  // add a second packet
-  sub.SetOffset (1200);
-  pos = rxBuf.Add (p, sub);
-  deliverable = rxBuf.GetDeliverable (0);
-  
-  NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 15600, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 2400, "Wrong buffer size");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.first, 1200,
-                        "Wrong deliverable offset value");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.second, 2400,
-                        "Wrong deliverable packet size");
+    // add a second packet
+    sub.SetOffset(1200);
+    pos = rxBuf.Add(p, sub);
+    deliverable = rxBuf.GetDeliverable(0);
 
-  // insert out of order packet
-  sub.SetOffset (3600);
-  pos = rxBuf.Add (p, sub);
-  deliverable = rxBuf.GetDeliverable (0);
+    NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 15600, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 2400, "Wrong buffer size");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.first, 1200, "Wrong deliverable offset value");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.second, 2400, "Wrong deliverable packet size");
 
-  NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 14400, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 3600, "Wrong buffer size");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.first, 1200,
-                        "Wrong deliverable offset value");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.second, 2400,
-                        "Wrong deliverable packet size");
+    // insert out of order packet
+    sub.SetOffset(3600);
+    pos = rxBuf.Add(p, sub);
+    deliverable = rxBuf.GetDeliverable(0);
 
-  // insert missing packet
-  sub.SetOffset (2400);
-  pos = rxBuf.Add (p, sub);
-  deliverable = rxBuf.GetDeliverable (0);
+    NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 14400, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 3600, "Wrong buffer size");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.first, 1200, "Wrong deliverable offset value");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.second, 2400, "Wrong deliverable packet size");
 
-  NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 13200, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 4800, "Wrong buffer size");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.first, 3600,
-                        "Wrong deliverable offset value");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.second, 4800,
-                        "Wrong deliverable packet size");
+    // insert missing packet
+    sub.SetOffset(2400);
+    pos = rxBuf.Add(p, sub);
+    deliverable = rxBuf.GetDeliverable(0);
 
-  // test full buffer
-  sub.SetOffset (4800);
-  Ptr<Packet> p1 = Create<Packet> (13200);
-  pos = rxBuf.Add (p1, sub);
-  deliverable = rxBuf.GetDeliverable (0);
+    NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 13200, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 4800, "Wrong buffer size");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.first, 3600, "Wrong deliverable offset value");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.second, 4800, "Wrong deliverable packet size");
 
-  NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 0, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 18000, "Wrong buffer size");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.first, 4800,
-                        "Wrong deliverable offset value");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.second, 18000,
-                        "Wrong deliverable packet size");
+    // test full buffer
+    sub.SetOffset(4800);
+    Ptr<Packet> p1 = Create<Packet>(13200);
+    pos = rxBuf.Add(p1, sub);
+    deliverable = rxBuf.GetDeliverable(0);
 
-  // test buffer overflow
-  sub.SetOffset (18000);
-  neg = rxBuf.Add (p, sub);
-  deliverable = rxBuf.GetDeliverable (0);
+    NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 0, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 18000, "Wrong buffer size");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.first, 4800, "Wrong deliverable offset value");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.second, 18000, "Wrong deliverable packet size");
 
-  NS_TEST_ASSERT_MSG_EQ(neg, false, "Buffer overflow");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 0, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 18000, "Wrong buffer size");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.first, 4800,
-                        "Wrong deliverable offset value");
-  NS_TEST_ASSERT_MSG_EQ(deliverable.second, 18000,
-                        "Wrong deliverable packet size");
+    // test buffer overflow
+    sub.SetOffset(18000);
+    neg = rxBuf.Add(p, sub);
+    deliverable = rxBuf.GetDeliverable(0);
+
+    NS_TEST_ASSERT_MSG_EQ(neg, false, "Buffer overflow");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 0, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 18000, "Wrong buffer size");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.first, 4800, "Wrong deliverable offset value");
+    NS_TEST_ASSERT_MSG_EQ(deliverable.second, 18000, "Wrong deliverable packet size");
 }
 
 void
-QuicRxBufferTestCase::TestStreamExtract ()
+QuicRxBufferTestCase::TestStreamExtract()
 {
-  // create the buffer
-  QuicStreamRxBuffer rxBuf;
-  rxBuf.SetMaxBufferSize (18000);
+    // create the buffer
+    QuicStreamRxBuffer rxBuf;
+    rxBuf.SetMaxBufferSize(18000);
 
-  // create packet
-  Ptr<Packet> p = Create<Packet> (1200);
-  QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (1, 0, p->GetSize (), false,
-                                                   true, false);
-  sub.SetOffset (0);
+    // create packet
+    Ptr<Packet> p = Create<Packet>(1200);
+    QuicSubheader sub =
+        QuicSubheader::CreateStreamSubHeader(1, 0, p->GetSize(), false, true, false);
+    sub.SetOffset(0);
 
-  // add a packet
-  rxBuf.Add (p, sub);
-  std::pair<uint64_t, uint64_t> deliverable = rxBuf.GetDeliverable (0);
+    // add a packet
+    rxBuf.Add(p, sub);
+    std::pair<uint64_t, uint64_t> deliverable = rxBuf.GetDeliverable(0);
 
-  // add a second packet
-  sub.SetOffset (1200);
-  rxBuf.Add (p, sub);
-  deliverable = rxBuf.GetDeliverable (0);
+    // add a second packet
+    sub.SetOffset(1200);
+    rxBuf.Add(p, sub);
+    deliverable = rxBuf.GetDeliverable(0);
 
-  // insert a third packet
-  sub.SetOffset (2400);
-  rxBuf.Add (p, sub);
-  deliverable = rxBuf.GetDeliverable (0);
-  
-  // extract first two packets
-  Ptr<Packet> outPkt = rxBuf.Extract(deliverable.second - 1200);
-  
-  NS_TEST_ASSERT_MSG_NE(outPkt, 0, "Failed to extract packets");
-  NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(),2400,  "Wrong packet size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 16800, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 1200, "Wrong buffer size");
-  
-  // insert missing packet
-  sub.SetOffset (0);
-  rxBuf.Add (outPkt, sub);
-  deliverable = rxBuf.GetDeliverable (0);
-  
-  // extract all packets
-  outPkt = rxBuf.Extract(deliverable.second);
-  
-  NS_TEST_ASSERT_MSG_NE(outPkt, 0, "Failed to extract packets");
-  NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(), 3600,  "Wrong packet size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 18000, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 0, "Wrong buffer size");
+    // insert a third packet
+    sub.SetOffset(2400);
+    rxBuf.Add(p, sub);
+    deliverable = rxBuf.GetDeliverable(0);
 
-  // test empty buffer
-  outPkt = rxBuf.Extract(1200);
-  NS_TEST_ASSERT_MSG_EQ(outPkt, 0, "Failed to extract packets");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 18000, "Wrong available data size");
-  NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 0, "Wrong buffer size");
+    // extract first two packets
+    Ptr<Packet> outPkt = rxBuf.Extract(deliverable.second - 1200);
+
+    NS_TEST_ASSERT_MSG_NE(outPkt, nullptr, "Failed to extract packets");
+    NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(), 2400, "Wrong packet size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 16800, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 1200, "Wrong buffer size");
+
+    // insert missing packet
+    sub.SetOffset(0);
+    rxBuf.Add(outPkt, sub);
+    deliverable = rxBuf.GetDeliverable(0);
+
+    // extract all packets
+    outPkt = rxBuf.Extract(deliverable.second);
+
+    NS_TEST_ASSERT_MSG_NE(outPkt, nullptr, "Failed to extract packets");
+    NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(), 3600, "Wrong packet size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 18000, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 0, "Wrong buffer size");
+
+    // test empty buffer
+    outPkt = rxBuf.Extract(1200);
+    NS_TEST_ASSERT_MSG_EQ(outPkt, nullptr, "Failed to extract packets");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Available(), 18000, "Wrong available data size");
+    NS_TEST_ASSERT_MSG_EQ(rxBuf.Size(), 0, "Wrong buffer size");
 }
 
 void
-QuicRxBufferTestCase::DoTeardown ()
+QuicRxBufferTestCase::DoTeardown()
 {
 }
 
@@ -374,11 +340,12 @@ QuicRxBufferTestCase::DoTeardown ()
  */
 class QuicRxBufferTestSuite : public TestSuite
 {
-public:
-  QuicRxBufferTestSuite () :
-      TestSuite ("quic-rx-buffer", UNIT)
-  {
-    AddTestCase (new QuicRxBufferTestCase, TestCase::QUICK);
-  }
+  public:
+    QuicRxBufferTestSuite()
+        : TestSuite("quic-rx-buffer", Type::UNIT)
+    {
+        AddTestCase(new QuicRxBufferTestCase, Duration::QUICK);
+    }
 };
+
 static QuicRxBufferTestSuite g_quicRxBufferTestSuite;

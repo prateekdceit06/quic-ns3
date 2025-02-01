@@ -1203,10 +1203,10 @@ class QuicHeaderTestSuite : public TestSuite
 {
 public:
   QuicHeaderTestSuite () :
-      TestSuite ("quic-header", UNIT)
+      TestSuite ("quic-header", Type::UNIT)
   {
-    AddTestCase (new QuicHeaderTestCase, TestCase::QUICK);
-    AddTestCase (new QuicSubHeaderTestCase, TestCase::QUICK);
+    AddTestCase (new QuicHeaderTestCase, Duration::QUICK);
+    AddTestCase (new QuicSubHeaderTestCase, Duration::QUICK);
   }
 };
 static QuicHeaderTestSuite g_QuicHeaderTestSuite;
